@@ -230,3 +230,7 @@ GET /health
 ## 8. 交流群
 
 Telegram 交流群：https://t.me/+dBrFr66Y8uo1ZDgx
+
+---
+
+*[English documentation / English](README.en.md)*
