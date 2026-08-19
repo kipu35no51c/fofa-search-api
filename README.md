@@ -53,6 +53,7 @@ curl -X POST https://fofa.shanshuiapi.com/api/search \
   "query": "title=\"login\"",
   "page": 1,
   "size": 10,
+  "remaining_today": 997,
   "assets": [
     {
       "ip": "52.70.38.235",
@@ -82,6 +83,9 @@ curl -X POST https://fofa.shanshuiapi.com/api/search \
 | query | string | 回显请求的查询语句 |
 | page / size | int | 回显本次翻页参数 |
 | fields | array/null | 字段名列表，可能为 null（当前接口未返回） |
+| remaining_today | int | 今日剩余搜索次数（每日重置） |
+| warning | string | 提示：额度即将用完（剩余≤10%）或 token 即将到期（≤7天） |
+| expires_at / expires_days | string/int | token 到期时间/剩余天数（仅到期前 7 天内出现） |
 | assets | array | 资产列表，每条含：`ip`、`port`、`protocol`、`host`、`title`、`domain`、`country`、`region`、`city`、`server`、`banner`、`status`、`org`、`mtime` |
 
 ### 翻页
@@ -116,11 +120,12 @@ curl -X POST https://fofa.shanshuiapi.com/api/search \
 
 ---
 
-## 4. 限流
+## 4. 限流与额度
 
-- 每个令牌独立限流，互不影响。
-- 默认 **10 次/秒**。
-- 超出后返回 `429`，请降低请求频率后重试。
+- **QPS**：每个令牌独立限流，默认 **10 次/秒**，超出返回 `429`。
+- **每日额度**：每个令牌每天有搜索次数上限（默认 1000 次/天，可配置），每天零点自动重置。每次成功响应带 `remaining_today` 字段显示今日剩余次数。
+- **额度提示**：今日剩余次数 ≤10% 时，响应带 `warning` 提示。
+- **令牌有效期**：默认 30 天，到期前 7 天响应带 `warning` 提示；到期后返回 `403`。
 
 ---
 
@@ -130,6 +135,7 @@ curl -X POST https://fofa.shanshuiapi.com/api/search \
 |---|---|---|---|
 | 0 | 200 | 成功 | — |
 | 401 | 401 | 令牌无效或缺失 | 检查 `X-API-Key` |
+| 403 | 403 | 今日额度用完，或令牌已到期 | 等次日额度重置，或联系管理员续期 |
 | 400 | 400 | 请求格式错误（缺 query 或 JSON 非法） | 检查请求体 |
 | 405 | 405 | 请求方法不是 POST | 使用 POST |
 | 429 | 429 | 超过限流 | 降速后重试 |
