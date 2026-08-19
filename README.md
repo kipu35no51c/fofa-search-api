@@ -1,5 +1,7 @@
 # FOFA 搜索服务 API 文档
 
+**[中文](./README.md) | [English](./README.en.md)**
+
 FOFA 资产搜索 HTTP 接口，使用前请先获取访问令牌（API Key）。
 
 - **接口地址**：`https://fofa.shanshuiapi.com`
@@ -230,7 +232,3 @@ GET /health
 ## 8. 交流群
 
 Telegram 交流群：https://t.me/+dBrFr66Y8uo1ZDgx
-
----
-
-*[English documentation / English](README.en.md)*

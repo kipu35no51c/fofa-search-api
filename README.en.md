@@ -1,5 +1,7 @@
 # FOFA Search Service API Documentation
 
+**[中文](./README.md) | [English](./README.en.md)**
+
 FOFA asset search HTTP API. An access token (API Key) is required before use.
 
 - **Base URL**: `https://fofa.shanshuiapi.com`
@@ -230,7 +232,3 @@ Returns `{"ok":true}`, useful for connectivity monitoring.
 ## 8. Community
 
 Telegram group: https://t.me/+dBrFr66Y8uo1ZDgx
-
----
-
-*[中文文档 / Chinese documentation](README.md)*
