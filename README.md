@@ -235,6 +235,39 @@ GET /health
 
 ---
 
-## 8. 交流群
+## 8. 令牌信息查询
+
+查询当前令牌的额度、今日用量与到期信息（**注意**：月卡类令牌从**首次使用**开始计时）。
+
+```
+GET /api/token-info
+```
+
+**请求**（带令牌）
+
+```bash
+curl -H "X-API-Key: ***" https://fofa.shanshuiapi.com/api/token-info
+```
+
+**响应示例**
+
+```json
+{
+  "code": 0,
+  "user_name": "月卡001",
+  "remark": "月卡批次20260819",
+  "daily_quota": 1000,
+  "today_used": 1,
+  "today_remaining": 999,
+  "activated": false,
+  "message": "未激活：首次使用后开始计时 30 天"
+}
+```
+
+> 已激活的令牌会返回 `expires_at`（到期时间）与 `expires_days`（剩余天数）。
+
+---
+
+## 9. 交流群
 
 Telegram 交流群：https://t.me/+dBrFr66Y8uo1ZDgx

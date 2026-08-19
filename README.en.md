@@ -235,6 +235,39 @@ Returns `{"ok":true}`, useful for connectivity monitoring.
 
 ---
 
-## 8. Community
+## 8. Token Info
+
+Query current token's quota, today's usage and expiry info (**note**: monthly-card tokens start counting from **first use**).
+
+```
+GET /api/token-info
+```
+
+**Request** (with token)
+
+```bash
+curl -H "X-API-Key: ***" https://fofa.shanshuiapi.com/api/token-info
+```
+
+**Response example**
+
+```json
+{
+  "code": 0,
+  "user_name": "card001",
+  "remark": "batch-20260819",
+  "daily_quota": 1000,
+  "today_used": 1,
+  "today_remaining": 999,
+  "activated": false,
+  "message": "Not activated: 30-day countdown starts on first use"
+}
+```
+
+> Activated tokens return `expires_at` (expiry time) and `expires_days` (days remaining).
+
+---
+
+## 9. Community
 
 Telegram group: https://t.me/+dBrFr66Y8uo1ZDgx
