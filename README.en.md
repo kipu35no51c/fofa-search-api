@@ -16,7 +16,7 @@ Every request must carry a token. Choose one of the following:
 **Request header (recommended)**
 
 ```
-X-API-Key: <your-token>
+X-API-Key: ***
 ```
 
 **Query parameter**
@@ -25,11 +25,9 @@ X-API-Key: <your-token>
 ?api_key=<your-token>
 ```
 
-> Tokens are issued by the administrator. Each token has a quota of **1000 searches/day** (resets at midnight), valid for **30 days**.
-
 ### Test Key
 
-> **Test Key (for trial use)**: quota **500 searches/day**, **auto-resets at midnight**.
+> Quota: **500 searches/day**, **auto-resets at midnight**.
 >
 > `X-API-Key: 4d9101c1a62728bcf23f6bd62a0fec33`
 
@@ -55,7 +53,7 @@ Content-Type: application/json
 ```bash
 curl -X POST https://fofa.shanshuiapi.com/api/search \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: <your-token>" \
+  -H "X-API-Key: ***" \
   -d '{"query":"title=\"login\"","page":1,"size":10}'
 ```
 
@@ -98,8 +96,7 @@ curl -X POST https://fofa.shanshuiapi.com/api/search \
 | page / size | int | Echo of pagination parameters |
 | fields | array/null | List of field names, may be null |
 | remaining_today | int | Remaining searches today (resets daily) |
-| warning | string | Notice: quota nearly used (≤10%) or token expiring soon (≤7 days) |
-| expires_at / expires_days | string/int | Token expiry time / days remaining (only shown within 7 days of expiry) |
+| warning | string | Notice: daily quota nearly used (≤10% remaining) |
 | assets | array | Asset list, each item contains `ip`, `port`, `protocol`, `host`, `title`, `domain`, `country`, `region`, `city`, `server`, `banner`, `status`, `org`, `mtime` |
 
 ### Pagination
@@ -134,110 +131,21 @@ Same syntax as the FOFA web console. Common examples:
 
 ---
 
-## 4. Rate Limits & Quota
-
-- **QPS**: Per-token rate limit, default **10 requests/second**, returns `429` when exceeded.
-- **Daily quota**: Each token has a daily search limit (default 1000/day), resets at midnight. Every successful response includes `remaining_today` showing remaining searches for today.
-- **Quota notice**: When remaining searches ≤10%, the response includes a `warning`.
-- **Token validity**: Default 30 days. A `warning` is included within 7 days of expiry; after expiry, requests return `403`.
-
----
-
-## 5. Error Codes
+## 4. Error Codes
 
 | code | HTTP | Meaning | Action |
 |---|---|---|---|
 | 0 | 200 | Success | — |
 | 401 | 401 | Invalid or missing token | Check `X-API-Key` |
-| 403 | 403 | Daily quota exhausted, or token expired | Wait for reset, or contact admin to renew |
+| 403 | 403 | Daily quota exhausted | Wait for reset |
 | 400 | 400 | Malformed request (missing query / invalid JSON) | Check request body |
 | 405 | 405 | Method not POST | Use POST |
 | 429 | 429 | Rate limit exceeded | Slow down and retry |
-| 502 | 502 | Upstream data source unavailable | Retry later; contact admin if persistent |
+| 502 | 502 | Upstream data source unavailable | Retry later |
 
 ---
 
-## 6. Code Examples
-
-### Python
-
-```python
-import requests
-
-API = "https://fofa.shanshuiapi.com/api/search"
-KEY = "<your-token>"
-
-def search(query, page=1, size=10):
-    resp = requests.post(API, headers={"X-API-Key": KEY},
-                         json={"query": query, "page": page, "size": size})
-    resp.raise_for_status()
-    return resp.json()
-
-# Fetch multiple pages
-for page in range(1, 4):
-    data = search('title="login"', page=page, size=50)
-    for asset in data.get("assets", []):
-        print(asset["ip"], asset["port"], asset["title"])
-```
-
-### Go
-
-```go
-package main
-
-import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"net/http"
-)
-
-func main() {
-	body, _ := json.Marshal(map[string]any{
-		"query": `title="login"`,
-		"page":  1,
-		"size":  10,
-	})
-	req, _ := http.NewRequest("POST", "https://fofa.shanshuiapi.com/api/search", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-API-Key", "<your-token>")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	var result map[string]any
-	json.NewDecoder(resp.Body).Decode(&result)
-	fmt.Printf("%+v\n", result)
-}
-```
-
-### Command Line
-
-```bash
-curl -s -X POST https://fofa.shanshuiapi.com/api/search \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: <your-token>" \
-  -d '{"query":"title=\"login\"","page":1,"size":10}'
-```
-
----
-
-## 7. Health Check
-
-```
-GET /health
-```
-
-Returns `{"ok":true}`, useful for connectivity monitoring.
-
----
-
-## 8. Token Info
-
-Query current token's quota, today's usage and expiry info (**note**: monthly-card tokens start counting from **first use**).
+## 5. Token Info
 
 ```
 GET /api/token-info
@@ -258,16 +166,56 @@ curl -H "X-API-Key: ***" https://fofa.shanshuiapi.com/api/token-info
   "remark": "batch-20260819",
   "daily_quota": 1000,
   "today_used": 1,
-  "today_remaining": 999,
-  "activated": false,
-  "message": "Not activated: 30-day countdown starts on first use"
+  "today_remaining": 999
 }
 ```
 
-> Activated tokens return `expires_at` (expiry time) and `expires_days` (days remaining).
+---
+
+## 6. Health Check
+
+```
+GET /health
+```
+
+Returns `{"ok":true}`, useful for connectivity monitoring.
 
 ---
 
-## 9. Community
+## 7. Code Examples
+
+### Python
+
+```python
+import requests
+
+API = "https://fofa.shanshuiapi.com/api/search"
+KEY = "***"
+
+def search(query, page=1, size=10):
+    resp = requests.post(API, headers={"X-API-Key": KEY},
+                         json={"query": query, "page": page, "size": size})
+    resp.raise_for_status()
+    return resp.json()
+
+# Fetch multiple pages
+for page in range(1, 4):
+    data = search('title="login"', page=page, size=50)
+    for asset in data.get("assets", []):
+        print(asset["ip"], asset["port"], asset["title"])
+```
+
+### Command Line
+
+```bash
+curl -s -X POST https://fofa.shanshuiapi.com/api/search \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ***" \
+  -d '{"query":"title=\"login\"","page":1,"size":10}'
+```
+
+---
+
+## 8. Community
 
 Telegram group: https://t.me/+dBrFr66Y8uo1ZDgx

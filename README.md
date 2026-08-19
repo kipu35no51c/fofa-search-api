@@ -16,7 +16,7 @@ FOFA 资产搜索 HTTP 接口，使用前请先获取访问令牌（API Key）�
 **请求头方式（推荐）**
 
 ```
-X-API-Key: <你的令牌>
+X-API-Key: ***
 ```
 
 **查询参数方式**
@@ -25,11 +25,9 @@ X-API-Key: <你的令牌>
 ?api_key=<你的令牌>
 ```
 
-> 令牌由管理员发放。每个令牌额度 **1000 次/天**（每天零点重置），有效期 **30 天**。
-
 ### 测试 Key
 
-> **测试 Key（供试用）**：额度 **500 次/天**，**每晚 12 点自动重置**。
+> 额度 **500 次/天**，**每晚 12 点自动重置**。
 >
 > `X-API-Key: 4d9101c1a62728bcf23f6bd62a0fec33`
 
@@ -55,7 +53,7 @@ Content-Type: application/json
 ```bash
 curl -X POST https://fofa.shanshuiapi.com/api/search \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: <你的令牌>" \
+  -H "X-API-Key: ***" \
   -d '{"query":"title=\"login\"","page":1,"size":10}'
 ```
 
@@ -98,8 +96,7 @@ curl -X POST https://fofa.shanshuiapi.com/api/search \
 | page / size | int | 回显本次翻页参数 |
 | fields | array/null | 字段名列表，可能为 null |
 | remaining_today | int | 今日剩余搜索次数（每日重置） |
-| warning | string | 提示：额度即将用完（≤10%）或令牌即将到期（≤7天） |
-| expires_at / expires_days | string/int | 令牌到期时间/剩余天数（到期前 7 天内出现） |
+| warning | string | 提示：今日额度即将用完（剩余 ≤10%） |
 | assets | array | 资产列表，每条含 `ip`、`port`、`protocol`、`host`、`title`、`domain`、`country`、`region`、`city`、`server`、`banner`、`status`、`org`、`mtime` |
 
 ### 翻页
@@ -134,110 +131,21 @@ curl -X POST https://fofa.shanshuiapi.com/api/search \
 
 ---
 
-## 4. 限流与额度
-
-- **QPS**：每个令牌独立限流，默认 **10 次/秒**，超出返回 `429`。
-- **每日额度**：每个令牌每天有搜索次数上限（默认 1000 次/天），每天零点自动重置。每次成功响应带 `remaining_today` 字段显示今日剩余次数。
-- **额度提示**：今日剩余次数 ≤10% 时，响应带 `warning` 提示。
-- **令牌有效期**：默认 30 天，到期前 7 天响应带 `warning` 提示；到期后返回 `403`。
-
----
-
-## 5. 错误码
+## 4. 错误码
 
 | code | HTTP | 含义 | 处理方式 |
 |---|---|---|---|
 | 0 | 200 | 成功 | — |
 | 401 | 401 | 令牌无效或缺失 | 检查 `X-API-Key` |
-| 403 | 403 | 今日额度用完，或令牌已到期 | 等次日额度重置，或联系管理员续期 |
+| 403 | 403 | 今日额度用完 | 等次日重置 |
 | 400 | 400 | 请求格式错误（缺 query 或 JSON 非法） | 检查请求体 |
 | 405 | 405 | 请求方法不是 POST | 使用 POST |
 | 429 | 429 | 超过限流 | 降速后重试 |
-| 502 | 502 | 上游数据源暂不可用 | 稍后重试，持续失败请联系管理员 |
+| 502 | 502 | 上游数据源暂不可用 | 稍后重试 |
 
 ---
 
-## 6. 代码示例
-
-### Python
-
-```python
-import requests
-
-API = "https://fofa.shanshuiapi.com/api/search"
-KEY = "<你的令牌>"
-
-def search(query, page=1, size=10):
-    resp = requests.post(API, headers={"X-API-Key": KEY},
-                         json={"query": query, "page": page, "size": size})
-    resp.raise_for_status()
-    return resp.json()
-
-# 翻页拉取多页结果
-for page in range(1, 4):
-    data = search('title="login"', page=page, size=50)
-    for asset in data.get("assets", []):
-        print(asset["ip"], asset["port"], asset["title"])
-```
-
-### Go
-
-```go
-package main
-
-import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"net/http"
-)
-
-func main() {
-	body, _ := json.Marshal(map[string]any{
-		"query": `title="login"`,
-		"page":  1,
-		"size":  10,
-	})
-	req, _ := http.NewRequest("POST", "https://fofa.shanshuiapi.com/api/search", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-API-Key", "<你的令牌>")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	var result map[string]any
-	json.NewDecoder(resp.Body).Decode(&result)
-	fmt.Printf("%+v\n", result)
-}
-```
-
-### 命令行
-
-```bash
-curl -s -X POST https://fofa.shanshuiapi.com/api/search \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: <你的令牌>" \
-  -d '{"query":"title=\"login\"","page":1,"size":10}'
-```
-
----
-
-## 7. 健康检查
-
-```
-GET /health
-```
-
-返回 `{"ok":true}`，可用于连通性监控。
-
----
-
-## 8. 令牌信息查询
-
-查询当前令牌的额度、今日用量与到期信息（**注意**：月卡类令牌从**首次使用**开始计时）。
+## 5. 令牌信息查询
 
 ```
 GET /api/token-info
@@ -258,16 +166,56 @@ curl -H "X-API-Key: ***" https://fofa.shanshuiapi.com/api/token-info
   "remark": "月卡批次20260819",
   "daily_quota": 1000,
   "today_used": 1,
-  "today_remaining": 999,
-  "activated": false,
-  "message": "未激活：首次使用后开始计时 30 天"
+  "today_remaining": 999
 }
 ```
 
-> 已激活的令牌会返回 `expires_at`（到期时间）与 `expires_days`（剩余天数）。
+---
+
+## 6. 健康检查
+
+```
+GET /health
+```
+
+返回 `{"ok":true}`，可用于连通性监控。
 
 ---
 
-## 9. 交流群
+## 7. 代码示例
+
+### Python
+
+```python
+import requests
+
+API = "https://fofa.shanshuiapi.com/api/search"
+KEY = "***"
+
+def search(query, page=1, size=10):
+    resp = requests.post(API, headers={"X-API-Key": KEY},
+                         json={"query": query, "page": page, "size": size})
+    resp.raise_for_status()
+    return resp.json()
+
+# 翻页拉取多页结果
+for page in range(1, 4):
+    data = search('title="login"', page=page, size=50)
+    for asset in data.get("assets", []):
+        print(asset["ip"], asset["port"], asset["title"])
+```
+
+### 命令行
+
+```bash
+curl -s -X POST https://fofa.shanshuiapi.com/api/search \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ***" \
+  -d '{"query":"title=\"login\"","page":1,"size":10}'
+```
+
+---
+
+## 8. 交流群
 
 Telegram 交流群：https://t.me/+dBrFr66Y8uo1ZDgx
