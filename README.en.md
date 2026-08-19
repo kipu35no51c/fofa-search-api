@@ -27,6 +27,12 @@ X-API-Key: <your-token>
 
 > Tokens are issued by the administrator. Each token has a quota of **1000 searches/day** (resets at midnight), valid for **30 days**.
 
+### Test Key
+
+> **Test Key (for trial use)**: quota **500 searches/day**, **auto-resets at midnight**.
+>
+> `X-API-Key: 4d9101c1a62728bcf23f6bd62a0fec33`
+
 ---
 
 ## 2. Search Endpoint
