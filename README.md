@@ -5,7 +5,7 @@ FOFA 资产搜索 HTTP 接口。使用前请先获取访问令牌（API Key）�
 - **接口地址**：`https://fofa.shanshuiapi.com`
 - **协议**：HTTPS / JSON
 
----
+
 
 ## 1. 认证
 
@@ -21,24 +21,9 @@ X-API-Key: <你的令牌>
 ?api_key=<你的令牌>
 ```
 
-### 令牌列表
+> 令牌由管理员发放。每个令牌额度 **1000 次/天**（每天零点重置），有效期 **30 天**。
 
-每个令牌额度 **1000 次/天**（每天零点重置），有效期 **30 天**。
 
-| 令牌 | 备注 |
-|---|---|
-| `ebad3a957bf1a1ed541f07f473956807` | 用户1 |
-| `d826d1a40200fde4efa433ee1c5529ab` | 用户2 |
-| `a06eae6f2c59eff45339d1512b25b06f` | 用户3 |
-| `ffdd9309719902444c025da87ad95866` | 用户4 |
-| `62cdd8dbdf73eab528e6737e70b48566` | 用户5 |
-| `d0211999ea190986242fea182a4ff027` | 用户6 |
-| `9d2e486b35d0559ef2685bdfae22aaf9` | 用户7 |
-| `a34383ec3d55bce478fda8024ac7d772` | 用户8 |
-| `bd91c120a3b758b146637982579f0bf8` | 用户9 |
-| `3627f5868f81dbc85915569bc7f3494d` | 用户10 |
-
----
 
 ## 2. 搜索接口
 
@@ -50,7 +35,7 @@ Content-Type: application/json
 ### 请求参数
 
 | 参数 | 类型 | 必填 | 说明 |
-|---|---|---|---|
+|||||
 | query | string | ✅ | 搜索语法，见下方「查询语法」 |
 | page | int | ❌ | 页码，从 1 开始，默认 1 |
 | size | int | ❌ | 每页返回条数，范围 **2 ~ 50**，默认 10 |
@@ -95,7 +80,7 @@ curl -X POST https://fofa.shanshuiapi.com/api/search \
 ### 响应字段说明
 
 | 字段 | 类型 | 说明 |
-|---|---|---|
+||||
 | code | int | 0 表示成功，非 0 见「错误码」 |
 | query | string | 回显请求的查询语句 |
 | page / size | int | 回显本次翻页参数 |
@@ -118,14 +103,14 @@ curl -X POST https://fofa.shanshuiapi.com/api/search \
 -d '{"query":"domain=\"baidu.com\"","page":3,"size":50}'
 ```
 
----
+
 
 ## 3. 查询语法
 
 与 FOFA 网页版语法一致，常用示例：
 
 | 目的 | 查询语句 |
-|---|---|
+|||
 | 标题包含 login | `title="login"` |
 | 域名 | `domain="baidu.com"` |
 | 指定 IP | `ip="1.2.3.4"` |
@@ -135,7 +120,7 @@ curl -X POST https://fofa.shanshuiapi.com/api/search \
 | 组合条件 | `title="login" && country="CN"` |
 | 排除 | `title="login" && country!="US"` |
 
----
+
 
 ## 4. 限流与额度
 
@@ -144,12 +129,12 @@ curl -X POST https://fofa.shanshuiapi.com/api/search \
 - **额度提示**：今日剩余次数 ≤10% 时，响应带 `warning` 提示。
 - **令牌有效期**：默认 30 天，到期前 7 天响应带 `warning` 提示；到期后返回 `403`。
 
----
+
 
 ## 5. 错误码
 
 | code | HTTP | 含义 | 处理方式 |
-|---|---|---|---|
+|||||
 | 0 | 200 | 成功 | — |
 | 401 | 401 | 令牌无效或缺失 | 检查 `X-API-Key` |
 | 403 | 403 | 今日额度用完，或令牌已到期 | 等次日额度重置，或联系管理员续期 |
@@ -158,7 +143,7 @@ curl -X POST https://fofa.shanshuiapi.com/api/search \
 | 429 | 429 | 超过限流 | 降速后重试 |
 | 502 | 502 | 上游数据源暂不可用 | 稍后重试，持续失败请联系管理员 |
 
----
+
 
 ## 6. 代码示例
 
@@ -226,7 +211,7 @@ curl -s -X POST https://fofa.shanshuiapi.com/api/search \
   -d '{"query":"title=\"login\"","page":1,"size":10}'
 ```
 
----
+
 
 ## 7. 健康检查
 
@@ -235,7 +220,7 @@ GET /health
 ```
 返回 `{"ok":true}`，可用于连通性监控。
 
----
+
 
 ## 8. 交流群
 
