@@ -47,7 +47,6 @@ Content-Type: application/json
 | query | string | ✅ | Search syntax, see「Query Syntax」below |
 | page | int | ❌ | Page number, starts at 1, default 1 |
 | size | int | ❌ | Results per page, range **2 ~ 50**, default 10 |
-| download | bool | ❌ | Also export all matching assets. `true` costs **2 credits** and returns an export task |
 
 ### Request Example
 
@@ -57,12 +56,6 @@ curl -X POST https://fofa.shanshuiapi.com/api/search \
   -H "Content-Type: application/json" \
   -H "X-API-Key: <your-token>" \
   -d '{"query":"title=\"login\"","page":1,"size":10}'
-
-# Search + export (costs 2 credits, creates an export task)
-curl -X POST https://fofa.shanshuiapi.com/api/search \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: <your-token>" \
-  -d '{"query":"title=\"login\"","page":1,"size":10,"download":true}'
 ```
 
 ### Response Example
@@ -73,6 +66,8 @@ curl -X POST https://fofa.shanshuiapi.com/api/search \
   "query": "title=\"login\"",
   "page": 1,
   "size": 10,
+  "fields": ["ip", "port", "protocol", "host", "title", "domain", "country", "region", "city", "server", "banner", "status", "org", "mtime"],
+  "total": 30081754,
   "remaining_today": 997,
   "assets": [
     {
@@ -102,16 +97,15 @@ curl -X POST https://fofa.shanshuiapi.com/api/search \
 | code | int | 0 = success, non-zero = error, see「Error Codes」 |
 | query | string | Echo of the query string |
 | page / size | int | Echo of pagination parameters |
-| fields | array/null | List of field names, may be null |
+| fields | array | List of field names in this response |
+| **total** | int | **Total number of assets matching the query** (real match count, useful for display/pagination planning) |
 | remaining_today | int | Remaining searches today (resets daily) |
 | warning | string | Notice: daily quota nearly used (≤10% remaining) |
 | assets | array | Asset list, each item contains `ip`, `port`, `protocol`, `host`, `title`, `domain`, `country`, `region`, `city`, `server`, `banner`, `status`, `org`, `mtime` |
-| export_task_id | int | **Only when download=true**: export task ID |
-| export_status_url | string | **Only when download=true**: export task status URL |
 
 ### Pagination
 
-Change the `page` parameter to paginate:
+Change the `page` parameter to paginate; combine with `total` to compute the number of pages:
 
 ```bash
 # Page 1
@@ -122,89 +116,11 @@ Change the `page` parameter to paginate:
 -d '{"query":"domain=\"baidu.com\"","page":3,"size":50}'
 ```
 
----
-
-## 3. Export / Download (after download=true)
-
-A search with `download:true` asynchronously creates an export task that exports all assets matching the query (cap is determined by the FOFA free quota, typically 2500~2800 rows).
-
-### 3.1 Check Export Task Status
-
-```
-GET /api/export/{task_id}
-```
-
-**Request** (with token)
-
-```bash
-curl -H "X-API-Key: <your-token>" https://fofa.shanshuiapi.com/api/export/1
-```
-
-**Response example** (processing)
-
-```json
-{
-  "code": 0,
-  "task_id": 1,
-  "status": "processing",
-  "query": "title=\"login\"",
-  "limit": 2800,
-  "format": "csv"
-}
-```
-
-**Response example** (done)
-
-```json
-{
-  "code": 0,
-  "task_id": 1,
-  "status": "done",
-  "query": "title=\"login\"",
-  "limit": 2614,
-  "format": "csv",
-  "file_size": 59697,
-  "download_url": "/api/export/1/file"
-}
-```
-
-**Response example** (failed)
-
-```json
-{
-  "code": 0,
-  "task_id": 1,
-  "status": "failed",
-  "query": "title=\"login\"",
-  "limit": 2800,
-  "format": "csv",
-  "message": "create download: ..."
-}
-```
-
-| Status | Description |
-|---|---|
-| processing | Export in progress, retry later (usually 5~30 seconds) |
-| done | Complete, `download_url` is ready |
-| failed | Failed, `message` explains why (e.g. FOFA free quota exhausted) |
-
-### 3.2 Download the Export File
-
-```
-GET /api/export/{task_id}/file
-```
-
-**Request** (with token)
-
-```bash
-curl -o result.csv -H "X-API-Key: <your-token>" https://fofa.shanshuiapi.com/api/export/1/file
-```
-
-Returns a CSV file (`Content-Type: text/csv`, supports range/resume). Files are cached on the server for **24 hours**; after expiry, re-search with download to regenerate.
+> Note: `size` is capped at 50 per request. For more data, paginate.
 
 ---
 
-## 4. Query Syntax
+## 3. Query Syntax
 
 Same syntax as the FOFA web console. Common examples:
 
@@ -221,23 +137,21 @@ Same syntax as the FOFA web console. Common examples:
 
 ---
 
-## 5. Error Codes
+## 4. Error Codes
 
 | code | HTTP | Meaning | Action |
 |---|---|---|---|
 | 0 | 200 | Success | — |
 | 401 | 401 | Invalid or missing token | Check `X-API-Key` |
 | 403 | 403 | Daily quota exhausted | Wait for reset |
-| 400 | 400 | Malformed request (missing query / invalid JSON) | Check request body |
+| 400 | 400 | Malformed request, or FOFA query syntax error | Check request body / query syntax |
 | 405 | 405 | Method not POST | Use POST |
 | 429 | 429 | Rate limit exceeded | Slow down and retry |
-| 409 | 409 | Export file not ready (still processing) | Retry later |
-| 410 | 410 | Export file expired (>24h) | Re-search with download |
 | 502 | 502 | Upstream data source unavailable | Retry later |
 
 ---
 
-## 6. Token Info
+## 5. Token Info
 
 ```
 GET /api/token-info
@@ -264,7 +178,7 @@ curl -H "X-API-Key: <your-token>" https://fofa.shanshuiapi.com/api/token-info
 
 ---
 
-## 7. Health Check
+## 6. Health Check
 
 ```
 GET /health
@@ -274,7 +188,7 @@ Returns `{"ok":true}`, useful for connectivity monitoring.
 
 ---
 
-## 8. Code Examples
+## 7. Code Examples
 
 ### Python
 
@@ -290,29 +204,17 @@ def search(query, page=1, size=10):
     resp.raise_for_status()
     return resp.json()
 
+# Single search: use "total" to know the real match count
+data = search('title="login"', size=50)
+print("Total matches:", data.get("total"))
+for asset in data.get("assets", []):
+    print(asset["ip"], asset["port"], asset["title"])
+
 # Paginate through multiple pages
 for page in range(1, 4):
     data = search('title="login"', page=page, size=50)
     for asset in data.get("assets", []):
         print(asset["ip"], asset["port"], asset["title"])
-
-# Search + export all matching assets (costs 2 credits)
-data = search('title="login"', download=True)
-task_id = data["export_task_id"]
-
-# Poll export status until done
-import time
-while True:
-    st = requests.get(f"https://fofa.shanshuiapi.com/api/export/{task_id}",
-                      headers={"X-API-Key": KEY}).json()
-    if st["status"] == "done":
-        break
-    time.sleep(3)
-
-# Download the export file
-r = requests.get(f"https://fofa.shanshuiapi.com/api/export/{task_id}/file",
-                 headers={"X-API-Key": KEY})
-open("result.csv", "wb").write(r.content)
 ```
 
 ### Command Line
@@ -326,6 +228,6 @@ curl -s -X POST https://fofa.shanshuiapi.com/api/search \
 
 ---
 
-## 9. Community
+## 8. Community
 
 Telegram group: https://t.me/+dBrFr66Y8uo1ZDgx
