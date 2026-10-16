@@ -118,6 +118,12 @@ Change the `page` parameter to paginate; combine with `total` to compute the num
 
 > Note: `size` is capped at 50 per request. For more data, paginate.
 
+> 💡 **Pro tip**: when a single query matches a huge number of assets (e.g. hundreds of thousands),
+> direct pagination can only reach the first 60 results. By splitting the query into multiple
+> mutually-exclusive sub-queries (e.g. by country / port / region), you can bypass the per-query
+> depth limit and retrieve more data.
+> See: [Advanced Slicing Guide](./ADVANCED-SLICING.en.md)
+
 ---
 
 ## 3. Query Syntax
